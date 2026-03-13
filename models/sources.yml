@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: naboo_test
+    database: naboo-dbt-rudy
+    schema: naboo_test_rudy
+
+    tables:
+      - name: client_requests
+        description: "Demandes de séminaires soumises par les entreprises via la plateforme Naboo."
+
+      - name: client_proposals
+        description: "Propositions de lieux envoyées aux entreprises en réponse à une demande client."
+
+      - name: quotes
+        description: "Devis associés aux propositions, correspondant aux différentes étapes de paiement (acompte, solde, post-séjour)."
+
+      - name: client_pricing_items
+        description: "Lignes de prix contenues dans les devis représentant les prestations, frais et remises."

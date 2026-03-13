@@ -1,0 +1,49 @@
+name: 'naboo_test'
+version: '1.0.0'
+config-version: 2
+
+profile: 'naboo_test'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+
+models:
+
+  naboo_test:
+
+    staging:
+      +materialized: view
+      +schema: dbt_rdesplan_staging
+      +tags: ["staging"]
+
+    intermediate:
+      +materialized: view
+      +schema: dbt_rdesplan_intermediate
+      +tags: ["intermediate"]
+
+    marts:
+      +materialized: table
+      +schema: dbt_rdesplan_marts
+      +tags: ["mart"]
+
+
+tests:
+  +store_failures: true
+
+
+seeds:
+  +quote_columns: false
+
+
+snapshots:
+  +target_schema: snapshots

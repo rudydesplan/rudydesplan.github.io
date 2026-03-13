@@ -1,0 +1,119 @@
+version: 2
+
+models:
+  - name: stg_client_pricing_items
+    description: "Lignes tarifaires nettoyées au grain 1 ligne = 1 pricing_item. Les lignes supprimées sont exclues. Les taux sont normalisés depuis un micro-rate vers un ratio décimal."
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "pricing_deposit_status = upper(pricing_deposit_status)"
+
+      - dbt_utils.expression_is_true:
+          expression: "pricing_type = upper(pricing_type)"
+
+      - dbt_utils.expression_is_true:
+          expression: "pricing_category = upper(pricing_category)"
+          
+      - dbt_utils.expression_is_true:
+          expression: "pricing_deposit_status = trim(pricing_deposit_status)"
+          
+      - dbt_utils.expression_is_true:
+          expression: "pricing_type = trim(pricing_type)"
+          
+      - dbt_utils.expression_is_true:
+          expression: "pricing_category = trim(pricing_category)"
+
+      - dbt_utils.expression_is_true:
+          expression: "total_price_base_price_price_with_vat >= total_price_base_price_price_without_vat"
+
+    columns:
+      - name: pricing_item_id
+        description: "Identifiant unique de la ligne tarifaire."
+        tests:
+          - not_null
+          - unique
+
+      - name: quote_id
+        description: "Identifiant du quote parent de la ligne tarifaire."
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+
+      - name: client_proposal_id
+        description: "Valeur source de client_proposal_id conservée à titre informatif uniquement ; la jointure fiable vers les propositions doit passer par quotes."
+        tests:
+          - dbt_utils.not_empty_string
+
+      - name: service_owner_id
+        description: "Identifiant du fournisseur ou du service owner."
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+
+      - name: pricing_deposit_status
+        description: "Statut de paiement de la ligne tarifaire, normalisé en majuscules."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['INITIAL', 'FINAL', 'POST_FINAL']
+
+      - name: pricing_type
+        description: "Type métier de la ligne tarifaire (normalisé en majuscules)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['AD_HOC', 'USER_FEES', 'OWNER_FEES']
+
+      - name: pricing_category
+        description: "Catégorie métier de la ligne tarifaire (normalisée en majuscules)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['FEES', 'ACTIVITE', 'HOUSE', 'RESTAURATION']
+
+      - name: price_option_quantity
+        description: "Quantité associée à la ligne tarifaire."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: total_price_base_price_price_without_vat
+        description: "Montant HT de la ligne tarifaire."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: total_price_base_price_price_with_vat
+        description: "Montant TTC de la ligne tarifaire."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+      - name: price_option_user_fees_rate
+        description: "Taux de frais utilisateur converti en ratio décimal (valeur source divisée par 1 000 000)."
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+
+      - name: price_option_owner_fees_rate
+        description: "Taux de commission propriétaire converti en ratio décimal (valeur source divisée par 1 000 000)."
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+
+      - name: price_option_discount_rate
+        description: "Taux de remise converti en ratio décimal (valeur source divisée par 1 000 000)."
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              
+      - name: _loaded_at
+        description: "Timestamp technique indiquant quand la ligne a été chargée par dbt."
+        tests:
+          - not_null

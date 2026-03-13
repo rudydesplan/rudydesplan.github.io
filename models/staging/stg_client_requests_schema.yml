@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg_client_requests
+    description: "Demandes clients nettoyées au grain 1 ligne = 1 client_request. Les lignes supprimées sont exclues, le statut est normalisé en majuscules et le nombre de participants correspond au nombre d'adultes."
+
+    tests:       
+      - dbt_utils.expression_is_true:
+          expression: "client_request_status = upper(client_request_status)"
+          
+      - dbt_utils.expression_is_true:
+           expression: "client_request_key = {{ dbt_utils.generate_surrogate_key(['client_request_id']) }}"
+          
+      - dbt_utils.recency:
+          field: client_request_created_at
+          datepart: year
+          interval: 5
+       
+      - dbt_utils.expression_is_true:
+          expression: "_loaded_at >= client_request_created_at"
+          
+      - dbt_utils.expression_is_true:
+          expression: "client_request_company_name = trim(client_request_company_name)"
+
+    columns:
+      - name: client_request_key
+        description: "Clé technique générée via hash à partir de request_id."
+        tests:
+          - not_null
+          - unique
+    
+      - name: client_request_id
+        description: "Identifiant métier unique de la demande client."
+        tests:
+          - not_null
+          - unique
+
+      - name: client_request_company_id
+        description: "Identifiant de l'entreprise ayant soumis la demande."
+        tests:
+          - not_null
+
+      - name: client_request_company_name
+        description: "Nom de l'entreprise ayant soumis la demande."
+        tests:
+          - dbt_utils.not_empty_string
+
+      - name: client_request_status
+        description: "Statut de la demande normalisé en majuscules."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['CONFIRMED', 'IN_PROGRESS']
+
+      - name: client_request_created_at
+        description: "Horodatage de création de la demande."
+        tests:
+          - not_null
+
+      - name: client_request_participants_count
+        description: "Nombre d'adultes demandés dans la requête."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+          
+      - name: _loaded_at
+        description: "Timestamp technique indiquant quand la ligne a été chargée par dbt."
+        tests:
+          - not_null

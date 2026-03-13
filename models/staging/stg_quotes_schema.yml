@@ -1,0 +1,89 @@
+version: 2
+
+models:
+  - name: stg_quotes
+    description: "Quotes nettoyés au grain 1 ligne = 1 quote. Les lignes supprimées sont exclues, les statuts et types de paiement sont normalisés en majuscules et le taux d'acompte est converti depuis un micro-rate."
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "quote_status = upper(quote_status)"
+
+      - dbt_utils.expression_is_true:
+          expression: "quote_payment_type = upper(quote_payment_type)"
+          
+      - dbt_utils.expression_is_true:
+          expression: "quote_status = trim(quote_status)"
+          
+      - dbt_utils.expression_is_true:
+          expression: "quote_payment_type = trim(quote_payment_type)"
+
+      - dbt_utils.expression_is_true:
+          expression: "quote_start_at <= quote_end_at"
+
+      - dbt_utils.recency:
+          field: quote_created_at
+          datepart: year
+          interval: 5
+
+    columns:
+      - name: quote_id
+        description: "Identifiant unique du quote."
+        tests:
+          - not_null
+          - unique
+
+      - name: client_request_id
+        description: "Identifiant de la demande client associée au quote."
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+          - relationships:
+              to: ref('stg_client_requests')
+              field: client_request_id
+
+      - name: quote_house_id
+        description: "Identifiant de la venue associée au quote."
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+
+      - name: quote_payment_type
+        description: "Type de paiement du quote normalisé en majuscules (ex : DEPOSIT, BALANCE, POST_BALANCE)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['DEPOSIT', 'BALANCE', 'POST_BALANCE']
+
+      - name: quote_status
+        description: "Statut du quote normalisé en majuscules  (ex : WON, LOST, PENDING)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['WON', 'LOST', 'PENDING']
+        
+      - name: quote_deposit_rate
+        description: "Taux d'acompte normalisé en ratio décimal (valeur source divisée par 1 000 000)."
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+
+      - name: quote_start_at
+        description: "Horodatage de début du séjour associé au quote."
+        tests:
+          - not_null
+
+      - name: quote_end_at
+        description: "Horodatage de fin du séjour associé au quote."
+        tests:
+          - not_null
+
+      - name: quote_created_at
+        description: "Horodatage de création du quote."
+        tests:
+          - not_null
+          
+      - name: _loaded_at
+        description: "Timestamp technique indiquant quand la ligne a été chargée par dbt."
+        tests:
+          - not_null

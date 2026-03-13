@@ -1,0 +1,6 @@
+models:
+  - name: int_proposal_quotes_valid
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "client_proposal_quote_role = quote_payment_type"

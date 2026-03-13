@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: dim_pricing_snapshot_stage
+    description: "Dimension statique décrivant les statuts de snapshot tarifaire."
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "pricing_stage = upper(pricing_stage)"
+
+    columns:
+      - name: pricing_stage
+        description: "Statut du snapshot tarifaire."
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: ['INITIAL', 'FINAL', 'POST_FINAL']
+
+      - name: pricing_stage_rank
+        description: "Ordre logique du snapshot tarifaire."
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: [1, 2, 3]
+              quote: false
+
+      - name: pricing_stage_label
+        description: "Libellé métier du snapshot tarifaire."
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: ['Initial snapshot', 'Final snapshot', 'Post final snapshot']

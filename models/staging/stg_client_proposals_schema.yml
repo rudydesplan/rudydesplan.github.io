@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: stg_client_proposals
+    description: "Propositions commerciales nettoyées au grain 1 ligne = 1 proposition. Les lignes supprimées sont exclues. Les identifiants de quotes sont conservés tels quels afin de reconstruire le mapping proposal ↔ quote dans un modèle intermédiaire."
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "client_proposal_status = upper(client_proposal_status)"
+
+      - dbt_utils.expression_is_true:
+          expression: "client_proposal_start_at <= client_proposal_end_at"
+          
+      - dbt_utils.expression_is_true:
+          expression: "deposit_quote_ids is null or client_proposal_deposit_rate between 0 and 1"
+
+    columns:
+      - name: client_proposal_id
+        description: "Identifiant unique de la proposition commerciale."
+        tests:
+          - not_null
+          - unique
+
+      - name: client_request_id
+        description: "Identifiant de la demande client associée à la proposition."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_client_requests')
+              field: client_request_id
+
+      - name: client_proposal_house_id
+        description: "Identifiant de la venue proposée."
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+
+      - name: client_proposal_status
+        description: "Statut de la proposition normalisé en majuscules."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['PUBLISHED', 'BOOKING_CONFIRMED']
+
+      - name: client_proposal_deposit_rate
+        description: "Taux d'acompte normalisé en ratio décimal (valeur source divisée par 1 000 000)."
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+
+      - name: deposit_quote_ids
+        description: "Liste brute des identifiants de quotes d'acompte."
+
+      - name: balance_quote_ids
+        description: "Liste brute des identifiants de quotes de solde."
+
+      - name: balance_post_stay_quote_ids
+        description: "Liste brute des identifiants de quotes post-séjour."
+
+      - name: client_proposal_start_at
+        description: "Horodatage de début du séjour proposé."
+        tests:
+          - not_null
+
+      - name: client_proposal_end_at
+        description: "Horodatage de fin du séjour proposé."
+        tests:
+          - not_null
+
+      - name: client_proposal_participants_count
+        description: "Nombre d'adultes prévu dans la proposition."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+        
+      - name: _loaded_at
+        description: "Timestamp technique indiquant quand la ligne a été chargée par dbt."
+        tests:
+          - not_null

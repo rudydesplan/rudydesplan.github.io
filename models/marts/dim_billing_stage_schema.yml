@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: dim_billing_stage
+    description: "Dimension statique décrivant les étapes du cycle de facturation."
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "billing_stage = upper(billing_stage)"
+
+    columns:
+      - name: billing_stage
+        description: "Étape du cycle de facturation."
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: ['DEPOSIT', 'BALANCE', 'POST_BALANCE']
+
+      - name: billing_stage_rank
+        description: "Ordre logique de l'étape de facturation."
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: [1, 2, 3]
+              quote: false
+
+      - name: billing_stage_label
+        description: "Libellé métier de l'étape de facturation."
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: ['Deposit', 'Balance', 'Post balance']
